@@ -1,1 +1,1 @@
-streamlit, pandas, requests
+streamlit, pandas, requests, plotly
