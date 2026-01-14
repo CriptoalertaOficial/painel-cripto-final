@@ -1,17 +1,16 @@
 import streamlit as st
 import pandas as pd
 import requests
-import plotly.express as px
 import warnings
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="CriptoAlerta Terminal", page_icon="🦅", layout="wide")
 warnings.filterwarnings("ignore")
 
-# --- 2. CSS AVANÇADO (A MÁGICA VISUAL) ---
+# --- 2. CSS AVANÇADO (VISUAL DARK PREMIUM) ---
 st.markdown("""
 <style>
-    /* Fundo Global (Dark Tech) */
+    /* Fundo Global */
     .stApp {
         background-color: #050505;
         color: #e0e0e0;
@@ -23,65 +22,49 @@ st.markdown("""
         border-right: 1px solid #333;
     }
     
-    /* Cards de Métricas (Estilo Glass) */
+    /* Cards de Métricas */
     div[data-testid="metric-container"] {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #111;
+        border: 1px solid #333;
         border-radius: 12px;
-        padding: 20px;
-        transition: transform 0.2s;
-    }
-    div[data-testid="metric-container"]:hover {
-        transform: scale(1.02);
-        border: 1px solid #00C853;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     
-    /* Títulos e Textos */
-    h1, h2, h3 {
-        color: white !important;
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 700;
-    }
-    
-    /* Botões (Verde Institucional) */
+    /* Botões Verdes */
     .stButton button {
-        background: linear-gradient(45deg, #00C853, #009624);
+        background: linear-gradient(90deg, #00C853, #009624);
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: bold;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
     
     /* Tabela */
     div[data-testid="stDataFrame"] {
         border: 1px solid #333;
-        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SISTEMA DE LOGIN (Mantido) ---
+# --- 3. SISTEMA DE LOGIN ---
 def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
     if st.session_state["password_correct"]:
         return True
 
-    # Login Visual
     col1, col2, col3 = st.columns([1,1,1])
     with col2:
-        st.markdown("<h2 style='text-align: center;'>🔐 TERMINAL CRIPTO ALERTA</h2>", unsafe_allow_html=True)
-        st.info("Acesso Restrito a Membros do Dossiê.")
-        senha = st.text_input("Chave de Acesso:", type="password")
-        if st.button("CONECTAR AO SISTEMA"):
+        st.markdown("<h3 style='text-align: center; color: #00C853;'>🔐 ACESSO RESTRITO</h3>", unsafe_allow_html=True)
+        senha = st.text_input("Senha do Dossiê:", type="password")
+        if st.button("CONECTAR"):
             if senha == "baleia2026": 
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
-                st.error("Acesso Negado.")
+                st.error("Senha Inválida.")
     return False
 
 if not check_password():
@@ -97,16 +80,13 @@ def get_price(coin_id):
     except:
         return 0
 
-# --- 5. SIDEBAR (Identidade Visual) ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
-    # URL de um logo genérico de Bitcoin ou SEU LOGO (Substitua a URL se tiver um logo online)
-    st.image("https://cdn-icons-png.flaticon.com/512/12114/12114233.png", width=80)
-    st.markdown("### CRIPTO ALERTA 2.0")
+    st.header("🦅 Cripto Alerta")
     st.caption("Intelligence Unit")
     st.divider()
     
-    st.header("➕ Nova Posição")
-    
+    st.write("**Registrar Operação**")
     if 'portfolio' not in st.session_state:
         st.session_state['portfolio'] = pd.DataFrame(columns=['Ativo', 'ID', 'Qtd', 'Preço_Medio', 'Meta', 'Stop'])
 
@@ -120,113 +100,82 @@ with st.sidebar:
         meta = c3.number_input("Alvo ($)", min_value=0.0)
         stop = c4.number_input("Stop ($)", min_value=0.0)
         
-        if st.form_submit_button("REGISTRAR NA BLOCKCHAIN"):
+        if st.form_submit_button("REGISTRAR"):
             novo = pd.DataFrame([{'Ativo': ativo, 'ID': id_coin.lower().strip(), 'Qtd': qtd, 'Preço_Medio': pm, 'Meta': meta, 'Stop': stop}])
             st.session_state['portfolio'] = pd.concat([st.session_state['portfolio'], novo], ignore_index=True)
-            st.success("Ordem Registrada!")
+            st.success("Salvo!")
 
-# --- 6. DASHBOARD PRINCIPAL ---
-st.markdown("## 🦅 PAINEL DE CONTROLE INSTITUCIONAL")
-st.markdown("Monitoramento em Tempo Real | Estratégia On-Chain")
+# --- 6. DASHBOARD ---
+st.markdown("## PAINEL DE CONTROLE INSTITUCIONAL")
 st.divider()
 
 if not st.session_state['portfolio'].empty:
     df = st.session_state['portfolio'].copy()
     
-    # Atualização de Preços
-    with st.spinner('📡 Sincronizando com satélites...'):
+    # Atualiza Preços
+    with st.spinner('Sincronizando dados...'):
         df['Preço_Atual'] = [get_price(x) for x in df['ID']]
     
-    # Matemática
+    # Cálculos
     df['Total Investido'] = df['Qtd'] * df['Preço_Medio']
     df['Saldo Atual'] = df['Qtd'] * df['Preço_Atual']
     df['Lucro $'] = df['Saldo Atual'] - df['Total Investido']
     df['Lucro %'] = ((df['Preço_Atual'] - df['Preço_Medio']) / df['Preço_Medio']) * 100
     
-    # Lógica de Alerta
     def get_status(row):
         if row['Preço_Atual'] == 0: return "⚠️ OFF"
-        if row['Preço_Atual'] >= row['Meta']: return "💰 VENDER AGORA"
-        if row['Preço_Atual'] <= row['Stop']: return "🛑 STOP LOSS"
+        if row['Preço_Atual'] >= row['Meta']: return "💰 VENDER"
+        if row['Preço_Atual'] <= row['Stop']: return "🛑 STOP"
         return "🛡️ HOLD"
     df['STATUS'] = df.apply(get_status, axis=1)
 
-    # --- MÉTRICAS (TOP CARDS) ---
+    # Métricas
     tot_inv = df['Total Investido'].sum()
     tot_atu = df['Saldo Atual'].sum()
-    tot_lucro = tot_atu - tot_inv
+    lucro = tot_atu - tot_inv
     
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("CAPITAL ALOCADO", f"$ {tot_inv:,.2f}")
-    col2.metric("SALDO EM CARTEIRA", f"$ {tot_atu:,.2f}")
-    col3.metric("LUCRO / PREJUÍZO", f"$ {tot_lucro:,.2f}", delta=f"{tot_lucro:,.2f}")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("CAPITAL ALOCADO", f"$ {tot_inv:,.2f}")
+    c2.metric("SALDO ATUAL", f"$ {tot_atu:,.2f}")
+    c3.metric("LUCRO LÍQUIDO", f"$ {lucro:,.2f}", delta=f"{lucro:,.2f}")
+
+    st.markdown("---")
+
+    # GRÁFICOS NATIVOS (SEM ERRO DE PLOTLY)
+    col_g1, col_g2 = st.columns([2, 1])
     
-    # Card de Performance
-    roi_total = (tot_lucro / tot_inv * 100) if tot_inv > 0 else 0
-    col4.metric("ROI TOTAL", f"{roi_total:.2f}%")
+    with col_g1:
+        st.subheader("📊 Alocação por Ativo")
+        # Gráfico de Barras Nativo (Muito rápido e não dá erro)
+        chart_data = df.set_index("Ativo")[["Saldo Atual"]]
+        st.bar_chart(chart_data, color="#00C853")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- GRÁFICOS VISUAIS (NOVIDADE!) ---
-    c_chart1, c_chart2 = st.columns([2, 1])
-    
-    with c_chart1:
-        st.subheader("📊 Composição da Carteira")
-        # Gráfico de Rosca (Donut Chart) estilo Institucional
-        if tot_atu > 0:
-            fig = px.pie(df, values='Saldo Atual', names='Ativo', hole=0.5, 
-                         color_discrete_sequence=px.colors.sequential.Greens_r)
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", 
-                              font={'color': "white"}, showlegend=True)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Sem dados para gráfico.")
-
-    with c_chart2:
-        st.subheader("🎯 Status dos Alvos")
-        # Mostra apenas texto resumido
-        lucro_ops = df[df['Lucro $'] > 0].shape[0]
-        preju_ops = df[df['Lucro $'] < 0].shape[0]
-        st.write(f"Operações no Verde: **{lucro_ops}**")
-        st.write(f"Operações no Vermelho: **{preju_ops}**")
+    with col_g2:
+        st.subheader("🎯 Performance")
+        st.write("Confiança do Mercado")
+        st.progress(75) # Barra de progresso nativa
+        st.caption("Índice: Extreme Greed")
         
-        # Barra de Progresso Simples
-        st.markdown("---")
-        st.caption("Confiança do Mercado (Fear & Greed)")
-        st.progress(75) # Valor estático simulado, pode conectar API depois
-        st.caption("Extreme Greed (Cuidado)")
+        lucro_count = len(df[df['Lucro $'] >= 0])
+        st.write(f"Ativos no Lucro: **{lucro_count}**")
 
-    # --- TABELA DETALHADA ---
-    st.subheader("📋 Ordens Abertas")
-    
-    def style_dataframe(val):
-        if val == '💰 VENDER AGORA': return 'color: #00E676; font-weight: bold; background-color: #002200'
-        if val == '🛑 STOP LOSS': return 'color: #FF5252; font-weight: bold; background-color: #220000'
-        if val == '🛡️ HOLD': return 'color: #FFD600; font-weight: bold'
+    # Tabela
+    st.subheader("📋 Ordens")
+    def style_df(val):
+        if val == '💰 VENDER': return 'color: #00E676; font-weight: bold'
+        if val == '🛑 STOP': return 'color: #FF5252; font-weight: bold'
         return ''
 
     st.dataframe(
-        df[['Ativo', 'Qtd', 'Preço_Medio', 'Preço_Atual', 'Meta', 'Lucro %', 'STATUS']]
-        .style.applymap(style_dataframe, subset=['STATUS'])
-        .format({'Preço_Medio': '${:.2f}', 'Preço_Atual': '${:.2f}', 'Meta': '${:.2f}', 'Lucro %': '{:.2f}%'}),
-        use_container_width=True,
-        height=300
+        df[['Ativo', 'Qtd', 'Preço_Medio', 'Preço_Atual', 'Lucro %', 'STATUS']]
+        .style.applymap(style_df, subset=['STATUS'])
+        .format({'Preço_Medio': '${:.2f}', 'Preço_Atual': '${:.2f}', 'Lucro %': '{:.2f}%'}),
+        use_container_width=True
     )
     
-    if st.button("🗑️ LIMPAR DADOS DO SISTEMA"):
+    if st.button("LIMPAR SISTEMA"):
         st.session_state['portfolio'] = pd.DataFrame(columns=['Ativo', 'ID', 'Qtd', 'Preço_Medio', 'Meta', 'Stop'])
         st.rerun()
 
 else:
-    # Tela de "Vazio" Bonita
-    st.info("⚠️ Nenhuma posição detectada.")
-    st.markdown("""
-    <div style='background-color: #111; padding: 20px; border-radius: 10px; border: 1px dashed #444;'>
-        <h4>Como começar:</h4>
-        <ol>
-            <li>Use o menu lateral esquerdo.</li>
-            <li>Adicione seus ativos (Ex: Render, Bitcoin).</li>
-            <li>O sistema monitorará 24/7 os alvos institucionais.</li>
-        </ol>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info("⚠️ Nenhuma posição ativa. Use a barra lateral.")
